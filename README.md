@@ -59,3 +59,6 @@ Contributors
 * Mark Galloway
 * Abram Hindle
 * Cole Mackenzie
+
+Collaboration/Consultation
+chushan

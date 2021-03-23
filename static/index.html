@@ -38,34 +38,6 @@
             debugDiv.innerHTML = "" + str;
         }
         debug("Test");
-        function sendJSONXMLHTTPRequest(url, objects, callback) {
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState == 4) {
-                    try {
-                        if (xhr.status == 200) {
-                            //XXX: parse some JSON from the request!
-                            //XXX: Pass the data to the callback!
-                            let result = JSON.parse(xhr.response);
-                            if (callback) {
-                                callback(result);
-                            }
-                        }
-                    }
-                    catch (e) {
-                        alert('Error: ' + e.name);
-                    }
-                }
-            };
-            xhr.open('POST', url);
-            xhr.setRequestHeader('Content-Type', "application/json");
-            xhr.setRequestHeader('Accept', '*/*');
-            if (objects) {
-                xhr.send(JSON.stringify(objects));
-            } else {
-                xhr.send();
-            }
-        }
         world = {};
 
         //XXX: TODO Make this prettier!
@@ -149,11 +121,11 @@
             world[entity] = data;
             drawNextFrame(); // (but should we?)
             //XXX: Send a XHTML Request that updates the entity you just modified!
-            let newEntity = {};
+            var newEntity = {};
             newEntity[entity] = data;
             socket.send(JSON.stringify(newEntity));
-            let url = "/entity/".concat(entity);
-            sendJSONXMLHTTPRequest(url, data, null);
+            let url = "/entity/" + entity;
+            sendRequest(url, data);
         }
         var counter = 0;
         function addEntityWithoutName(data) {
@@ -274,6 +246,22 @@
             });
         });
 
+        const sendRequest = (url, objects = null, callback) => {
+            var req = new Request();
+            req.onreadystatechange = () => {
+                try {
+                    if (req.status == 200) {
+                        //XXX: parse some JSON from the request!
+                        //XXX: Pass the data to the callback!
+                        callback(JSON.parse(req.response));
+                    }
+                }
+                catch (e) {
+                    alert('Error: ' + e.name);
+                }
+            };
+            req.send(JSON.stringify(objects));
+        }
 
         function update() {
             drawFrame();
@@ -283,14 +271,11 @@
         function wsSetup() {
             var url = "ws://" + host + "/subscribe";
             socket = new WebSocket(url);
-            socket.onopen = function () {
+            socket.onopen = () => {
                 //XXX: TODO What are you going to do here?
                 let url = "/world";
-                sendJSONXMLHTTPRequest(url, null, (newWorld) => {
-                    for (let key of Object.keys(newWorld)) {
-                        world[key] = newWorld[key];
-                        drawNextFrame();
-                    }
+                sendRequest(url, (newWorld) => {
+                    world = { ...newWorld };
                 });
             };
             socket.onerror = function (msg) {
@@ -300,11 +285,8 @@
                 try {
                     debug("WebSocket Recv:" + msg.data);
                     //XXX: TODO What are you going to do here?            
-                    var getMessage = JSON.parse(msg.data);
-                    for (let key of getMessage) {
-                        world[key] = getMessage[key];
-                        drawNextFrame();
-                    }
+                    let getMsg = JSON.parse(msg.data);
+                    world = { ...getMsg };
                 } catch (e) {
                     alert("socket on message: " + e);
                 }

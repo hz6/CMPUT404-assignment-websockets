@@ -26,13 +26,6 @@ app = Flask(__name__)
 sockets = Sockets(app)
 app.debug = True
 
-class Client:
-    def __init__(self):
-        self.queue = queue.Queue()
-    def put(self, v):
-        self.queue.put_nowait(v)
-    def get(self):
-        return self.queue.get()
 
 class World:
     def __init__(self):
@@ -67,18 +60,24 @@ class World:
     def world(self):
         return self.space
 
+class Client:
+    def __init__(self):
+        self.queue = queue.Queue()
+    def get(self):
+        return self.queue.get()
+    def put(self, v):
+            self.queue.put_nowait(v)
+
 clients = []
 myWorld = World() 
 
-def send_all(msg):
-    for client in clients:
-        client.put(msg)
-
-def send_all_json(obj):
-    send_all(json.dumps(obj))
 
 def set_listener( entity, data ):
     ''' do something with the update ! '''
+
+def send_json(msg):
+    for c in clients:
+        c.put(json.dumps(msg))
 
 myWorld.add_set_listener( set_listener )
         
@@ -93,12 +92,11 @@ def read_ws(ws,client):
     try:
         while 1:
             msg = ws.receive()
-            print("WS RECV: %s" % msg)
-            if msg is not None:
-                packet = json.loads(msg)
-                send_all_json(packet)
-            else:
+            print(f"WebSocket RECV: {msg}")
+            if msg == None:
                 break
+            else:
+                send_json(json.loads(msg))
     except:
         print("something wrong")
 
@@ -107,17 +105,16 @@ def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
     # XXX: TODO IMPLEMENT ME
-    client = Client()
-    clients.append(client)
-    g = gevent.spawn(read_ws, ws, client)
+    c = Client()
+    clients.append(c)
+    g = gevent.spawn(read_ws, ws, c)
     try:
         while 1:
-            msg = client.get()
-            ws.send(msg)
+            ws.send(c.get())
     except:
         print("something wrong")
     finally:
-        clients.remove(client)
+        clients.remove(c)
         gevent.kill(g)
 
 
@@ -136,27 +133,29 @@ def flask_post_json():
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-    data = flask_post_json()
-    for key in data:
-        myWorld.update(entity, key, data[key])
-    return json.dumps(myWorld.get(entity))
+    req_body = flask_post_json()
+    for k in req_body:
+        myWorld.update(entity, k, req_body[k])
+    res = myWorld.get(entity)
+    return res
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return json.dumps(myWorld.world())
+    res = myWorld.world()
+    return res
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return json.dumps(myWorld.get(entity))
+    res = myWorld.get(entity)
+    return res
 
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    myWorld.clear()
-    return json.dumps(myWorld.world())
+    return {}
 
 
 

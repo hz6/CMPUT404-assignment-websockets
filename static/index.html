@@ -121,7 +121,7 @@
             world[entity] = data;
             drawNextFrame(); // (but should we?)
             //XXX: Send a XHTML Request that updates the entity you just modified!
-            let newEntity = {};
+            const newEntity = {};
             newEntity[entity] = data;
             socket.send(JSON.stringify(newEntity));
             sendRequest("entity/" + entity, data);
@@ -272,7 +272,7 @@
             socket = new WebSocket(url);
             socket.onopen = () => {
                 //XXX: TODO What are you going to do here?
-                let url = "/world";
+                const url = "/world";
                 sendRequest(url, (newWorld) => {
                     world = { ...newWorld };
                 });
@@ -284,7 +284,7 @@
                 try {
                     debug("WebSocket Recv:" + msg.data);
                     //XXX: TODO What are you going to do here?            
-                    let getMsg = JSON.parse(msg.data);
+                    const getMsg = JSON.parse(msg.data);
                     world = { ...getMsg };
                 } catch (e) {
                     alert("socket on message: " + e);

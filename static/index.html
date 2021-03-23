@@ -121,11 +121,10 @@
             world[entity] = data;
             drawNextFrame(); // (but should we?)
             //XXX: Send a XHTML Request that updates the entity you just modified!
-            var newEntity = {};
+            let newEntity = {};
             newEntity[entity] = data;
             socket.send(JSON.stringify(newEntity));
-            let url = "entity/" + entity;
-            sendRequest(url, data);
+            sendRequest("entity/" + entity, data);
         }
         var counter = 0;
         function addEntityWithoutName(data) {

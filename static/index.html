@@ -124,7 +124,7 @@
             var newEntity = {};
             newEntity[entity] = data;
             socket.send(JSON.stringify(newEntity));
-            let url = "/entity/" + entity;
+            let url = "entity/" + entity;
             sendRequest(url, data);
         }
         var counter = 0;
